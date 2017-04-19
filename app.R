@@ -9,6 +9,7 @@ ui <- fluidPage(theme=shinytheme("flatly"),
                  uiOutput("p_low")
     ),
     mainPanel(
+      h4(textOutput("pow")),
       tabsetPanel(
       tabPanel("Plot",
                plotOutput("pdf"),
@@ -56,7 +57,7 @@ server <- function(input, output) {
     
     #Calculations
     se<-sqrt(2/N) #standard error
-    ncp<-(d*sqrt(N/2)) #Calculate non-centrality parameter d
+    ncp<-(input$d*sqrt(N/2)) #Calculate non-centrality parameter d
     
     cdf2_t<-function(p) 1 + pt(qt(p/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p/2,2*N-2,0),2*N-2,ncp)
   
@@ -73,7 +74,13 @@ server <- function(input, output) {
   })
   # make dynamic slider 
   output$p_low <- renderUI({
-    sliderInput("p_lower", "P-value (lower limit):", min = 0, max = input$p_upper, value = input$p_lower, step= 0.01)
+    sliderInput("p_lower", "P-value (lower limit):", min = 0, max = input$p_upper, value = 0, step= 0.01)
+  })
+  output$pow <- renderText({
+    N<-input$N
+    d<-input$d
+    ncp<-(input$d*sqrt(N/2)) #Calculate non-centrality parameter d
+    paste("Statistical Power:",round((1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)),digits=2),".")
   })
 }
 shinyApp(ui = ui, server = server)
