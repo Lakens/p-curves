@@ -8,15 +8,19 @@ ui <- fluidPage(theme=shinytheme("flatly"),
   sidebarLayout(
     sidebarPanel(numericInput("N", "Participants per group:", 50, min = 1, max = 1000),
                  sliderInput("d", "Cohen's d effect size:", min = 0, max = 2, value = 0.5, step= 0.01),
-                 sliderInput("p_upper", "alpha, or p-value (upper limit):", min = 0, max = 1, value = 0.05, step= 0.001),
+                 sliderInput("p_upper", "alpha, or p-value (upper limit):", min = 0, max = 1, value = 0.05, step= 0.005),
                  uiOutput("p_low")
     ),
     mainPanel(
       h4(textOutput("pow")),
+      splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500), 
                plotOutput("pdf"),
-               plotOutput("cdf"),
+               plotOutput("cdf")
+      ),
+      splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500), 
                plotOutput("power_plot"),
                plotOutput("power_plot_d")
+      )
     )
   )
 )
@@ -112,7 +116,7 @@ server <- function(input, output) {
   }) 
   # make dynamic slider 
   output$p_low <- renderUI({
-    sliderInput("p_lower", "p-value (lower limit):", min = 0, max = input$p_upper, value = 0, step= 0.001)
+    sliderInput("p_lower", "p-value (lower limit):", min = 0, max = input$p_upper, value = 0, step= 0.005)
   })
   output$pow <- renderText({
     N<-input$N
