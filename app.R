@@ -9,18 +9,21 @@ ui <- fluidPage(theme=shinytheme("flatly"),
     sidebarPanel(numericInput("N", "Participants per group:", 50, min = 1, max = 1000),
                  sliderInput("d", "Cohen's d effect size:", min = 0, max = 2, value = 0.5, step= 0.01),
                  sliderInput("p_upper", "alpha, or p-value (upper limit):", min = 0, max = 1, value = 0.05, step= 0.005),
-                 uiOutput("p_low")
+                 uiOutput("p_low"),
+                 h4(textOutput("pow")),br(),
+                 h4(textOutput("pow2")),br(),
+                 h4("The two bottom plots indicate power (given the alpha and d) for a range of effect sizes (left), and power (given the alpha an N) for a range of Cohen's d."),br()
     ),
     mainPanel(
-      h4(textOutput("pow")),
-      splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500), 
+      splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500),cellHeights = c(800,800), 
                plotOutput("pdf"),
                plotOutput("cdf")
       ),
       splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500), 
                plotOutput("power_plot"),
                plotOutput("power_plot_d")
-      )
+      ),
+      h4("Get the code at ", a("GitHub", href="https://github.com/Lakens/p-curves"))
     )
   )
 )
@@ -42,7 +45,7 @@ server <- function(input, output) {
     pdf2_t <- function(p) 0.5 * dt(qt(p/2,2*N-2,0),2*N-2,ncp)/dt(qt(p/2,2*N-2,0),2*N-2,0) + dt(qt(1-p/2,2*N-2,0),2*N-2,ncp)/dt(qt(1-p/2,2*N-2,0),2*N-2,0)
     par(bg = "aliceblue")
     plot(-10,xlab="P-value", ylab="Density", axes=FALSE,
-         main=paste("P-curve"), xlim=c(0,1),  ylim=c(0, ymax))
+         main=paste("P-value distribution for d =",d,"and N =",N), xlim=c(0,1),  ylim=c(0, ymax))
     abline(v = seq(0,1,0.1), h = seq(0,ymax,5), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
     axis(side=2)
@@ -66,7 +69,7 @@ server <- function(input, output) {
   
     par(bg = "aliceblue")
     plot(-10,xlab="P-value", ylab="Probability", axes=FALSE,
-         main=paste("Cumulative P-curve"), xlim=c(0,1),  ylim=c(0, 1))
+         main=paste("Cumulative p-value distribution for d =",d,"and N =",N), xlim=c(0,1),  ylim=c(0, 1))
     abline(v = seq(0,1,0.1), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
     axis(side=2)
@@ -88,10 +91,10 @@ server <- function(input, output) {
     )
     par(bg = "aliceblue")
     plot(-10,xlab="sample size (per condition)", ylab="Power", axes=FALSE,
-         main=paste("power for independent t-test"), xlim=c(0,N*2),  ylim=c(0, 1))
+         main=paste("power for independent t-test with d =",d), xlim=c(0,N*2),  ylim=c(0, 1))
     abline(v = seq(0,N*2, (2*N)/10), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,2*N, (2*N)/10), labels=seq(0,2*N,(2*N)/10))
-    axis(side=2, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
+    axis(side=2, at=seq(0,1, 0.2), labels=seq(0,1,0.2))
     curve(plot_power(d=d, N=x, p_upper=p_upper), 3, 2*N, type="l", lty=1, lwd=2, ylim=c(0,1), xlim=c(0,N), add=TRUE)
     points(x=N, y=(1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)), cex=2, pch=19, col=rgb(1, 0, 0,0.5))
   })  
@@ -99,6 +102,7 @@ server <- function(input, output) {
     N<-input$N
     d<-input$d
     p_upper<-input$p_upper
+    ncp<-(input$d*sqrt(N/2)) #Calculate non-centrality parameter d
     plot_power_d <- (function(d, N, p_upper)
     {
       ncp <- d*(N*N/(N+N))^0.5 #formula to calculate t from d from Dunlap, Cortina, Vaslow, & Burke, 1996, Appendix B
@@ -108,11 +112,12 @@ server <- function(input, output) {
     )
     par(bg = "aliceblue")
     plot(-10,xlab="Cohen's d", ylab="Power", axes=FALSE,
-         main=paste("power for independent t-test"), xlim=c(0,2),  ylim=c(0, 1))
+         main=paste("power for independent t-test with N =",N,"per group"), xlim=c(0,2),  ylim=c(0, 1))
     abline(v = seq(0,2, 0.2), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,2, 0.2), labels=seq(0,2,0.2))
-    axis(side=2, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
+    axis(side=2, at=seq(0,1, 0.2), labels=seq(0,1,0.2))
     curve(plot_power_d(d=x, N=N, p_upper=p_upper), 0, 2, type="l", lty=1, lwd=2, ylim=c(0,1), xlim=c(0,2), add=TRUE)
+    points(x=d, y=(1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)), cex=2, pch=19, col=rgb(1, 0, 0,0.5))
   }) 
   # make dynamic slider 
   output$p_low <- renderUI({
@@ -121,12 +126,17 @@ server <- function(input, output) {
   output$pow <- renderText({
     N<-input$N
     d<-input$d
+    paste("On the right, you can see the p-value distribution for a two-sided independent t-test with",N,"participants in each group, and a true effect size of d =",d)
+  })
+  output$pow2 <- renderText({
+    N<-input$N
+    d<-input$d
     p_upper<-input$p_upper
     p_lower<-input$p_lower
     ncp<-(input$d*sqrt(N/2)) #Calculate non-centrality parameter d
     p_u<-1 + pt(qt(p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p_upper/2,2*N-2,0),2*N-2,ncp) #two-tailed
     p_l<-1 + pt(qt(p_lower/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p_lower/2,2*N-2,0),2*N-2,ncp) #two-tailed
-    paste("Below, you can see the p-value distribution for a two-sided independent t-test with",N,"participants in each group, and a true effect size of d =",d,". The statistical power (using and alpha of",p_upper,", based on the upper p-value limit) is",100*round((1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)),digits=4),"%. In the long run, you can expect ",100*round(p_u-p_l, 4),"% of p-values to fall in the selected area between p = ",p_lower,"and p = ",p_upper,".")
+    paste("The statistical power based on an alpha of",p_upper,"and assuming the true effect size is d =",d,"is",100*round((1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)),digits=4),"%. In the long run, you can expect ",100*round(p_u-p_l, 4),"% of p-values to fall in the selected area between p = ",p_lower,"and p = ",p_upper,".")
   })
 }
 shinyApp(ui = ui, server = server)
