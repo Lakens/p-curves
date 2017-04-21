@@ -13,13 +13,10 @@ ui <- fluidPage(theme=shinytheme("flatly"),
     ),
     mainPanel(
       h4(textOutput("pow")),
-      tabsetPanel(
-      tabPanel("Plot",
                plotOutput("pdf"),
                plotOutput("cdf"),
-               plotOutput("power_plot")
-      )
-    )
+               plotOutput("power_plot"),
+               plotOutput("power_plot_d")
     )
   )
 )
@@ -94,6 +91,25 @@ server <- function(input, output) {
     curve(plot_power(d=d, N=x, p_upper=p_upper), 3, 2*N, type="l", lty=1, lwd=2, ylim=c(0,1), xlim=c(0,N), add=TRUE)
     points(x=N, y=(1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)), cex=2, pch=19, col=rgb(1, 0, 0,0.5))
   })  
+  output$power_plot_d <- renderPlot({
+    N<-input$N
+    d<-input$d
+    p_upper<-input$p_upper
+    plot_power_d <- (function(d, N, p_upper)
+    {
+      ncp <- d*(N*N/(N+N))^0.5 #formula to calculate t from d from Dunlap, Cortina, Vaslow, & Burke, 1996, Appendix B
+      t <- qt(1-(p_upper/2),df=(N*2)-2)
+      1-(pt(t,df=N*2-2,ncp=ncp)-pt(-t,df=N*2-2,ncp=ncp))
+    }
+    )
+    par(bg = "aliceblue")
+    plot(-10,xlab="Cohen's d", ylab="Power", axes=FALSE,
+         main=paste("power for independent t-test"), xlim=c(0,2),  ylim=c(0, 1))
+    abline(v = seq(0,2, 0.2), h = seq(0,1,0.1), col = "lightgray", lty = 1)
+    axis(side=1, at=seq(0,2, 0.2), labels=seq(0,2,0.2))
+    axis(side=2, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
+    curve(plot_power_d(d=x, N=N, p_upper=p_upper), 0, 2, type="l", lty=1, lwd=2, ylim=c(0,1), xlim=c(0,2), add=TRUE)
+  }) 
   # make dynamic slider 
   output$p_low <- renderUI({
     sliderInput("p_lower", "p-value (lower limit):", min = 0, max = input$p_upper, value = 0, step= 0.001)
