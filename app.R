@@ -4,7 +4,7 @@
 library(shiny)
 library(shinythemes)
 ui <- fluidPage(theme=shinytheme("flatly"),
-  titlePanel("P-curves"),
+  titlePanel("P-value distribution and power curves for an independent two-tailed t-test"),
   sidebarLayout(
     sidebarPanel(numericInput("N", "Participants per group:", 50, min = 1, max = 1000),
                  sliderInput("d", "Cohen's d effect size:", min = 0, max = 2, value = 0.5, step= 0.01),
@@ -12,7 +12,7 @@ ui <- fluidPage(theme=shinytheme("flatly"),
                  uiOutput("p_low"),
                  h4(textOutput("pow")),br(),
                  h4(textOutput("pow2")),br(),
-                 h4("The two bottom plots indicate power (given the alpha and d) for a range of effect sizes (left), and power (given the alpha an N) for a range of Cohen's d."),br()
+                 h4("The three other plots indicate power for a range of alpha levels (top right), sample sizes per group (bottom left), and effect sizes (bottom right). The bottom right figure illustrates the point that when the true effect size of a study is unknown, the power of a study is best thought of as a curve, not as a single value."),br()
     ),
     mainPanel(
       splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500),cellHeights = c(800,800), 
@@ -73,10 +73,11 @@ server <- function(input, output) {
     abline(v = seq(0,1,0.1), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
     axis(side=2)
-    cord.x <- c(p_lower,seq(p_lower,p_upper,0.001),p_upper) 
-    cord.y <- c(0,cdf2_t(seq(p_lower, p_upper, 0.001)),0)
-    polygon(cord.x,cord.y,col=rgb(1, 0, 0,0.5))
+#    cord.x <- c(p_lower,seq(p_lower,p_upper,0.001),p_upper) 
+#    cord.y <- c(0,cdf2_t(seq(p_lower, p_upper, 0.001)),0)
+#    polygon(cord.x,cord.y,col=rgb(1, 0, 0,0.5))
     curve(cdf2_t, 0, 1, n=1000, col="black", lwd=2, add=TRUE)
+    points(x=p_upper, y=(1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)), cex=2, pch=19, col=rgb(1, 0, 0,0.5))
   })
   output$power_plot <- renderPlot({
     N<-input$N
