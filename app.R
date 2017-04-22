@@ -68,8 +68,8 @@ server <- function(input, output) {
     cdf2_t<-function(p) 1 + pt(qt(p/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p/2,2*N-2,0),2*N-2,ncp)
   
     par(bg = "aliceblue")
-    plot(-10,xlab="P-value", ylab="Probability", axes=FALSE,
-         main=paste("Cumulative p-value distribution for d =",d,"and N =",N), xlim=c(0,1),  ylim=c(0, 1))
+    plot(-10,xlab="Alpha", ylab="Probability", axes=FALSE,
+         main=paste("Power for independent t-test with d =",d,"and N =",N), xlim=c(0,1),  ylim=c(0, 1))
     abline(v = seq(0,1,0.1), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
     axis(side=2)
@@ -92,7 +92,7 @@ server <- function(input, output) {
     )
     par(bg = "aliceblue")
     plot(-10,xlab="sample size (per condition)", ylab="Power", axes=FALSE,
-         main=paste("power for independent t-test with d =",d), xlim=c(0,N*2),  ylim=c(0, 1))
+         main=paste("Power for independent t-test with d =",d), xlim=c(0,N*2),  ylim=c(0, 1))
     abline(v = seq(0,N*2, (2*N)/10), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,2*N, (2*N)/10), labels=seq(0,2*N,(2*N)/10))
     axis(side=2, at=seq(0,1, 0.2), labels=seq(0,1,0.2))
@@ -113,7 +113,7 @@ server <- function(input, output) {
     )
     par(bg = "aliceblue")
     plot(-10,xlab="Cohen's d", ylab="Power", axes=FALSE,
-         main=paste("power for independent t-test with N =",N,"per group"), xlim=c(0,2),  ylim=c(0, 1))
+         main=paste("Power for independent t-test with N =",N,"per group"), xlim=c(0,2),  ylim=c(0, 1))
     abline(v = seq(0,2, 0.2), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,2, 0.2), labels=seq(0,2,0.2))
     axis(side=2, at=seq(0,1, 0.2), labels=seq(0,1,0.2))
