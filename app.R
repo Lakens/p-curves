@@ -185,11 +185,7 @@ server <- function(input, output) {
     z<-(dt(y*sqrt(N/2),df=(N*2)-2, ncp=ncp)) #determine upperbounds polygon
     polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(0, 0, 1,0.5))
     segments(crit_d, 0, crit_d, 0.42, col= 'black', lwd=2)
-<<<<<<< HEAD
     text(crit_d, 0.45, paste("Effects larger than d = ",round(crit_d,2),"will be statistically significant with",N,"participants per group"), cex = 1.5)
-=======
-    text(crit_d, 0.45, paste("Effects larger than d = ",round(crit_d,2),"will be statistically significant"), cex = 1)
->>>>>>> 8e99273b5a8fdbf7b1fda180c79d538e03c626ae
   }) 
   
 }
