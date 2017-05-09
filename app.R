@@ -4,17 +4,19 @@
 library(shiny)
 library(shinythemes)
 ui <- fluidPage(theme=shinytheme("flatly"),
-  titlePanel("P-value distribution and power curves for an independent two-tailed t-test"),
+  titlePanel("Distribution of Cohen's d, p-values, and power curves for an independent two-tailed t-test"),
   sidebarLayout(
     sidebarPanel(numericInput("N", "Participants per group:", 50, min = 1, max = 1000),
                  sliderInput("d", "Cohen's d effect size:", min = 0, max = 2, value = 0.5, step= 0.01),
                  sliderInput("p_upper", "alpha, or p-value (upper limit):", min = 0, max = 1, value = 0.05, step= 0.005),
                  uiOutput("p_low"),
-                 h4(textOutput("pow")),br(),
+                 h4(textOutput("pow0")),br(),
+                 h4(textOutput("pow1")),br(),
                  h4(textOutput("pow2")),br(),
                  h4("The three other plots indicate power for a range of alpha levels (top right), sample sizes per group (bottom left), and effect sizes (bottom right). The bottom right figure illustrates the point that when the true effect size of a study is unknown, the power of a study is best thought of as a curve, not as a single value."),br()
     ),
     mainPanel(
+      plotOutput("plot_d", width = "1004px", height = "500px"),
       splitLayout(style = "border: 1px solid silver:", cellWidths = c(500,500),cellHeights = c(800,800), 
                plotOutput("pdf"),
                plotOutput("cdf")
@@ -28,6 +30,9 @@ ui <- fluidPage(theme=shinytheme("flatly"),
   )
 )
 server <- function(input, output) {
+  #surpress warnings
+  options(warn = -1)
+  
   output$pdf <- renderPlot({
     N<-input$N
     d<-input$d
@@ -68,7 +73,7 @@ server <- function(input, output) {
     cdf2_t<-function(p) 1 + pt(qt(p/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p/2,2*N-2,0),2*N-2,ncp)
   
     par(bg = "aliceblue")
-    plot(-10,xlab="Alpha", ylab="Probability", axes=FALSE,
+    plot(-10,xlab="Alpha", ylab="Power", axes=FALSE,
          main=paste("Power for independent t-test with d =",d,"and N =",N), xlim=c(0,1),  ylim=c(0, 1))
     abline(v = seq(0,1,0.1), h = seq(0,1,0.1), col = "lightgray", lty = 1)
     axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
@@ -124,7 +129,14 @@ server <- function(input, output) {
   output$p_low <- renderUI({
     sliderInput("p_lower", "p-value (lower limit):", min = 0, max = input$p_upper, value = 0, step= 0.005)
   })
-  output$pow <- renderText({
+  output$pow0 <- renderText({
+    p_upper<-input$p_upper
+    N<-input$N
+    d<-input$d
+    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    paste("On the top, you can see the distribution of Cohen's d assuming a true effect size of d =",d,"illustrated by the black line. Only effects larger than d =",round(crit_d,2),"will be statisically significant with",N,"observations per group. The distribution assuming a Cohen's d of 0 is illustrated by the grey curve. Red areas illustrates Type 1 errors, the blue area illustrates the Type 2 error rate.")
+  })
+  output$pow1 <- renderText({
     N<-input$N
     d<-input$d
     paste("On the right, you can see the p-value distribution for a two-sided independent t-test with",N,"participants in each group, and a true effect size of d =",d)
@@ -139,5 +151,42 @@ server <- function(input, output) {
     p_l<-1 + pt(qt(p_lower/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-p_lower/2,2*N-2,0),2*N-2,ncp) #two-tailed
     paste("The statistical power based on an alpha of",p_upper,"and assuming the true effect size is d =",d,"is",100*round((1 + pt(qt(input$p_upper/2,2*N-2,0),2*N-2,ncp) - pt(qt(1-input$p_upper/2,2*N-2,0),2*N-2,ncp)),digits=4),"%. In the long run, you can expect ",100*round(p_u-p_l, 4),"% of p-values to fall in the selected area between p = ",p_lower,"and p = ",p_upper,".")
   })
+  output$plot_d <- renderPlot({
+    N<-input$N
+    d<-input$d
+    p_upper<-input$p_upper
+    ncp<-(input$d*sqrt(N/2)) #Calculate non-centrality parameter d
+    low_x<--2
+    high_x<-3
+    #calc d-distribution
+    x=seq(low_x,high_x,length=10000) #create x values
+    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = ncp) #calculate distribution of d based on t-distribution
+    #create plot
+    par(bg = "aliceblue")
+    plot(-10,xlim=c(low_x,high_x), ylim=c(0,0.5), xlab="Cohen's d", ylab="Density",main=paste("Distribution of Cohen's d with d = ",round(d,2),", N = ",N))
+    #abline(v = seq(low_x,high_x,0.1), h = seq(0,0.5,0.1), col = "lightgray", lty = 1)
+    lines(x,d_dist,col='black',type='l', lwd=2)
+    #add d = 0 line
+    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = 0)
+    lines(x,d_dist,col='grey',type='l', lwd=1)
+    #Add Type 1 error rate right
+    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    y=seq(crit_d,10,length=10000) 
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2)) #determine upperbounds polygon
+    polygon(c(crit_d,y,10),c(0,z,0),col=rgb(1, 0, 0,0.5))
+    #Add Type 1 error rate left
+    crit_d<--abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    y=seq(-10, crit_d, length=10000) 
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2)) #determine upperbounds polygon
+    polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(1, 0, 0,0.5))
+    #Add Type 2 error rate
+    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    y=seq(-10,crit_d,length=10000) 
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2, ncp=ncp)) #determine upperbounds polygon
+    polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(0, 0, 1,0.5))
+    segments(crit_d, 0, crit_d, 0.42, col= 'black', lwd=2)
+    text(crit_d, 0.45, paste("Effects larger than d = ",round(crit_d,2),"will be statistically significant with",N,"participants per group"), cex = 1.5)
+  }) 
+  
 }
 shinyApp(ui = ui, server = server)
