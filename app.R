@@ -160,32 +160,34 @@ server <- function(input, output) {
     high_x<-3
     #calc d-distribution
     x=seq(low_x,high_x,length=10000) #create x values
-    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = ncp) #calculate distribution of d based on t-distribution
+    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = ncp)*sqrt(N/2) #calculate distribution of d based on t-distribution
+    #Set max Y for graph
+    y_max<-max(d_dist)+1
     #create plot
     par(bg = "aliceblue")
-    plot(-10,xlim=c(low_x,high_x), ylim=c(0,0.5), xlab="Cohen's d", ylab="Density",main=paste("Distribution of Cohen's d with d = ",round(d,2),", N = ",N))
+    plot(-10,xlim=c(low_x,high_x), ylim=c(0,y_max), xlab="Cohen's d", ylab="Density",main=paste("Distribution of Cohen's d with d = ",round(d,2),", N = ",N))
     #abline(v = seq(low_x,high_x,0.1), h = seq(0,0.5,0.1), col = "lightgray", lty = 1)
     lines(x,d_dist,col='black',type='l', lwd=2)
     #add d = 0 line
-    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = 0)
+    d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = 0)*sqrt(N/2)
     lines(x,d_dist,col='grey',type='l', lwd=1)
     #Add Type 1 error rate right
-    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    crit_d<-abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
     y=seq(crit_d,10,length=10000) 
-    z<-(dt(y*sqrt(N/2),df=(N*2)-2)) #determine upperbounds polygon
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2)*sqrt(N/2)) #determine upperbounds polygon
     polygon(c(crit_d,y,10),c(0,z,0),col=rgb(1, 0, 0,0.5))
     #Add Type 1 error rate left
-    crit_d<--abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    crit_d<--abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
     y=seq(-10, crit_d, length=10000) 
-    z<-(dt(y*sqrt(N/2),df=(N*2)-2)) #determine upperbounds polygon
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2)*sqrt(N/2)) #determine upperbounds polygon
     polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(1, 0, 0,0.5))
     #Add Type 2 error rate
-    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
+    crit_d<-abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
     y=seq(-10,crit_d,length=10000) 
-    z<-(dt(y*sqrt(N/2),df=(N*2)-2, ncp=ncp)) #determine upperbounds polygon
+    z<-(dt(y*sqrt(N/2),df=(N*2)-2, ncp=ncp)*sqrt(N/2)) #determine upperbounds polygon
     polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(0, 0, 1,0.5))
-    segments(crit_d, 0, crit_d, 0.42, col= 'black', lwd=2)
-    text(crit_d, 0.45, paste("Effects larger than d = ",round(crit_d,2),"will be statistically significant with",N,"participants per group"), cex = 1.5)
+    segments(crit_d, 0, crit_d, y_max-0.8, col= 'black', lwd=2)
+    text(crit_d, y_max-0.5, paste("Effects larger than d = ",round(crit_d,2),"will be statistically significant"), cex = 1)
   }) 
   
 }
