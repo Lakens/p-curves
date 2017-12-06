@@ -133,8 +133,10 @@ server <- function(input, output) {
     p_upper<-input$p_upper
     N<-input$N
     d<-input$d
+    VARd<-((N+N)/(N*N))+(d^2/(2*(N+N)))
+    SEd<-sqrt(VARd)
     crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
-    paste("On the top, you can see the distribution of Cohen's d assuming a true effect size of d =",d,"illustrated by the black line. Only observed effect sizes larger than d =",round(crit_d,2),"will be statisically significant with",N,"observations per group. The distribution assuming a Cohen's d of 0 is illustrated by the grey curve. Red areas illustrates Type 1 errors, the blue area illustrates the Type 2 error rate.")
+    paste("On the top, you can see the distribution of Cohen's d assuming a true effect size of d =",d,"illustrated by the black line. Only observed effect sizes larger than d =",round(crit_d,2),"will be statisically significant with",N,"observations per group. The distribution assuming a Cohen's d of 0 is illustrated by the grey curve. Red areas illustrates Type 1 errors, the blue area illustrates the Type 2 error rate. The distribution has a standard error of",round(SEd,3))
   })
   output$pow1 <- renderText({
     N<-input$N
@@ -168,22 +170,23 @@ server <- function(input, output) {
     d = round(d,2)
     plot(-10,xlim=c(low_x,high_x), ylim=c(0,y_max), xlab=substitute(paste("Cohen's ", delta == d)), ylab="Density",main=substitute(paste("Distribution of Cohen's ", delta == d,", N = ",N)))
     #abline(v = seq(low_x,high_x,0.1), h = seq(0,0.5,0.1), col = "lightgray", lty = 1)
+    axis(side = 1, at = seq(low_x,high_x,0.1), labels = FALSE)
     lines(x,d_dist,col='black',type='l', lwd=2)
     #add d = 0 line
     d_dist<-dt(x*sqrt(N/2),df=(N*2)-2, ncp = 0)*sqrt(N/2)
     lines(x,d_dist,col='grey',type='l', lwd=1)
     #Add Type 1 error rate right
-    crit_d<-abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
+    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
     y=seq(crit_d,10,length=10000) 
     z<-(dt(y*sqrt(N/2),df=(N*2)-2)*sqrt(N/2)) #determine upperbounds polygon
     polygon(c(crit_d,y,10),c(0,z,0),col=rgb(1, 0, 0,0.5))
     #Add Type 1 error rate left
-    crit_d<--abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
+    crit_d<--abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
     y=seq(-10, crit_d, length=10000) 
     z<-(dt(y*sqrt(N/2),df=(N*2)-2)*sqrt(N/2)) #determine upperbounds polygon
-    polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(1, 0, 0,0.5))
+    polygon(c(y,crit_d,crit_d),c(z,0,0),col=rgb(1, 0, 0,0.5))
     #Add Type 2 error rate
-    crit_d<-abs(qt(0.05/2, (N*2)-2))/sqrt(N/2)
+    crit_d<-abs(qt(p_upper/2, (N*2)-2))/sqrt(N/2)
     y=seq(-10,crit_d,length=10000) 
     z<-(dt(y*sqrt(N/2),df=(N*2)-2, ncp=ncp)*sqrt(N/2)) #determine upperbounds polygon
     polygon(c(y,crit_d,crit_d),c(0,z,0),col=rgb(0, 0, 1,0.5))
